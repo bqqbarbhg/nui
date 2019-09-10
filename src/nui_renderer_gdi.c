@@ -115,6 +115,7 @@ static void nui_gdi_free(nui_renderer *nr)
 			DeleteObject(f->font);
 		}
 	}
+	nui_free(r);
 }
 
 nui_renderer *nui_gdi_renderer_make(void *dc)
@@ -133,8 +134,6 @@ static void render(nui_gdi_renderer *r, HDC dc, const nui_render_info *ri, int r
 {
 	nui_draw *ptr = nui_draws_begin(ri->layer);
 	nui_draw *end = nui_draws_end(ri->layer);
-
-	SetBkMode(dc, TRANSPARENT);
 
 	DWORD wlen;
 	WCHAR wlocal[512];
@@ -182,6 +181,8 @@ static void render(nui_gdi_renderer *r, HDC dc, const nui_render_info *ri, int r
 			nui_point p = nui_offset(draw->draw.bounds.min, ri->offset);
 			nui_extent size = nui_layer_size(draw->layer);
 
+			// TODO: Don't redraw if child doesn't move!
+
 			nui_render_info lri;
 			lri.layer = draw->layer;
 			lri.offset.x = ri->offset.x + p.x;
@@ -201,5 +202,6 @@ void nui_gdi_render(void *dc, const nui_render_info *ri)
 {
 	HDC hdc = (HDC)dc;
 	nui_gdi_renderer *r = (nui_gdi_renderer*)nui_layer_renderer(ri->layer);
+	SetBkMode(hdc, TRANSPARENT);
 	render(r, hdc, ri, 0);
 }
