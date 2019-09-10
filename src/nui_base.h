@@ -7,8 +7,6 @@
 extern "C" {
 #endif
 
-#define nui_assert(cond) do { if (!(cond)) __debugbreak(); } while (0)
-
 typedef struct nui_color {
 	union {
 		struct {
@@ -52,6 +50,22 @@ typedef struct nui_rect {
 	};
 } nui_rect;
 
+// Generic
+
+#define nui_assert(cond) do { if (!(cond)) __debugbreak(); } while (0)
+#define nui_arraysize(arr) (sizeof(arr)/sizeof(*(arr)))
+
+static int32_t nui_min(int32_t x, int32_t y) {
+	return x < y ? x : y;
+}
+
+static int32_t nui_max(int32_t x, int32_t y) {
+	return x > y ? x : y;
+}
+static int32_t nui_clamp(int32_t x, int32_t min_x, int32_t max_x) {
+	return x < min_x ? min_x : x > max_x ? max_x : x;
+}
+
 // nui_color
 
 static int nui_color_eq(nui_color a, nui_color b) {
@@ -82,6 +96,8 @@ static nui_color nui_rgba(uint32_t hex) {
 	return c;
 }
 
+nui_color nui_blend_over(nui_color src, nui_color dst);
+
 // nui_point
 
 static nui_point nui_pt(int32_t x, int32_t y) {
@@ -93,11 +109,16 @@ static int nui_point_eq(nui_point a, nui_point b) {
 	return a.x == b.x && a.y == b.y;
 }
 
+static nui_point nui_offset(nui_point a, nui_point b) {
+	nui_point p = { a.x + b.x, a.y + b.y };
+	return p;
+}
+
 // nui_extent
 
-static nui_point nui_ex(int32_t x, int32_t y) {
-	nui_point p = { x, y };
-	return p;
+static nui_extent nui_ex(int32_t x, int32_t y) {
+	nui_extent ex = { x, y };
+	return ex;
 }
 
 // nui_rect

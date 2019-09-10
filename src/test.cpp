@@ -1,5 +1,5 @@
 #include "nui_canvas.h"
-#include "nui_canvas_gdi.h"
+#include "nui_renderer_gdi.h"
 #include <time.h>
 #include <stdio.h>
 
@@ -10,29 +10,51 @@
 nui_canvas *canvas;
 nui_layer *layer;
 nui_layer *inner;
+nui_font *font;
 HWND hwnd;
 
 void test_init()
 {
-	canvas = nui_make_canvas();
-	layer = nui_make_layer(canvas, 256, 256);
-	inner = nui_make_layer(canvas, 256, 256);
+	canvas = nui_make_canvas(nui_gdi_renderer_make(GetDC(hwnd)));
+	layer = nui_make_layer(canvas, nui_ex(0, 0));
+	inner = nui_make_layer(canvas, nui_ex(290, 40));
+
+	nui_set_bg_color(inner, nui_rgb(0x6495ed));
+
+	nui_font_desc desc = { };
+	desc.family = "Arial";
+	desc.height = 40;
+	font = nui_make_font(canvas, &desc);
 }
 
-void test_tick()
+void test_render()
 {
+	if (!canvas) return;
+
 	time_t t = time(NULL);
 	char tick[128];
 	snprintf(tick, sizeof(tick), "Time: %u", (uint32_t)t);
 
+	nui_extent ts = nui_measure(font, tick);
+
+	RECT wrc;
+	GetClientRect(hwnd, &wrc);
+
+	nui_extent ls = nui_ex(wrc.right - wrc.left, wrc.bottom - wrc.top);
+	nui_resize_layer(layer, ls);
+
+	nui_point pos;
+	pos.x = ls.x/2 - 290/2;
+	pos.y = ls.y/2 - 40/2;
+
 	nui_clear(layer);
-	nui_draw_layer(layer, nui_pt(0, 0), inner);
+	nui_draw_layer(layer, pos, inner);
 
 	nui_clear(inner);
-	nui_draw_text(inner, nui_pt(0, 0), nui_rgb(0), tick);
+	nui_draw_text(inner, nui_pt(0, 0), font, nui_rgb(0), tick);
 
 	nui_begin_rendering(canvas);
-	if (nui_layer_dirty(layer)) {
+	if (nui_layer_invalidation(layer) != nui_inv_none) {
 		InvalidateRect(hwnd, NULL, FALSE);
 	}
 }
@@ -45,13 +67,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		PostMessageW(hwnd, WM_QUIT, 0, 0);
 		break;
 
+	case WM_SIZE: {
+		test_render();
+	} break;
+
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
 		HDC dc = BeginPaint(hwnd, &ps);
-
-		HBRUSH brush = CreateSolidBrush(RGB(0x64, 0x95, 0xed));
-		FillRect(dc, &ps.rcPaint, brush);
-		DeleteObject(brush);
 
 		nui_begin_rendering(canvas);
 
@@ -60,6 +82,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		ri.clip.top = ps.rcPaint.top;
 		ri.clip.right = ps.rcPaint.right;
 		ri.clip.bottom = ps.rcPaint.bottom;
+		ri.bg_color = nui_rgb(0xffffff);
 		nui_gdi_render(dc, &ri);
 
 		nui_end_rendering(canvas);
@@ -103,7 +126,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PTSTR lpCmdLine
 			DispatchMessageW(&msg);
 		}
 
-		test_tick();
+		test_render();
 	}
 
 	return 0;

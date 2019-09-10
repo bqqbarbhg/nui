@@ -2,6 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+// nui_color
+
+nui_color nui_blend_over(nui_color src, nui_color dst)
+{
+	uint32_t a = dst.a;
+	uint32_t ia = 255 - a;
+	nui_color col = {
+		(uint8_t)(((uint32_t)src.r * ia + (uint32_t)dst.r * a) / 255),
+		(uint8_t)(((uint32_t)src.g * ia + (uint32_t)dst.g * a) / 255),
+		(uint8_t)(((uint32_t)src.b * ia + (uint32_t)dst.b * a) / 255),
+		src.a, // TODO
+	};
+	return col;
+}
+
 // Allocations
 
 #define NUI_MIN_ALLOC 128
